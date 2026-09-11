@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>公众号排版工作台</title>
+  <style>
+    :root {
+      --ink: #1f2429;
+      --muted: #66717a;
+      --line: #e1e5e8;
+      --paper: #ffffff;
+      --canvas: #f3f4f5;
+      --red: #e50012;
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      padding-top: 72px;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .topbar {
+      position: fixed;
+      z-index: 10;
+      top: 0;
+      right: 0;
+      left: 0;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 12px 32px;
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 2px 10px rgba(26, 32, 36, .04);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--red);
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .brand h1 { margin: 0; font-size: 18px; letter-spacing: 0; }
+    .style-switcher {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: auto;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #f7f8f8;
+    }
+    .style-tab {
+      min-height: 34px;
+      padding: 0 13px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .style-tab:hover { color: var(--ink); background: #fff; }
+    .style-tab.selected { color: var(--red); border-color: #f0b4ba; background: #fff; }
+    .top-actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+    .button {
+      min-height: 38px;
+      padding: 0 15px;
+      border: 1px solid #cfd5d9;
+      border-radius: 6px;
+      color: var(--ink);
+      background: #fff;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .button:hover { border-color: #aeb6bb; background: #fafafa; }
+    .button.primary { border-color: var(--red); color: #fff; background: var(--red); }
+    .button.primary:hover { background: #c90010; }
+    .button:disabled { cursor: not-allowed; opacity: .45; }
+    .icon-button {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .icon-button:hover { color: var(--ink); background: #f3f4f5; }
+    .cover-modal {
+      width: min(920px, calc(100% - 32px));
+      max-width: 920px;
+      max-height: min(88vh, 780px);
+      margin: auto;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 24px 80px rgba(26, 32, 36, .22);
+    }
+    .cover-modal::backdrop { background: rgba(31, 36, 41, .42); }
+    .cover-dialog { display: flex; flex-direction: column; max-height: min(88vh, 780px); }
+    .cover-dialog-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .cover-dialog-header h2 { margin: 0; font-size: 18px; line-height: 1.4; }
+    .cover-dialog-header p { margin: 0 0 4px; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+    .cover-dialog-body {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(220px, .38fr) minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px 22px;
+      overflow: auto;
+    }
+    .cover-controls { display: grid; align-content: start; gap: 13px; }
+    .cover-field { display: grid; gap: 6px; }
+    .cover-field > span { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .cover-select,
+    .cover-prompt {
+      width: 100%;
+      border: 1px solid #cfd5d9;
+      border-radius: 5px;
+      color: var(--ink);
+      background: #fff;
+      outline: 0;
+    }
+    .cover-select { min-height: 38px; padding: 0 10px; font-size: 13px; }
+    .cover-select:focus,
+    .cover-prompt:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(229, 0, 18, .1); }
+    .cover-prompt-field { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .cover-prompt-field > span { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .cover-prompt {
+      min-height: 390px;
+      flex: 1;
+      resize: vertical;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .cover-dialog-footer {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 22px;
+      border-top: 1px solid var(--line);
+    }
+    .cover-status { min-width: 0; color: var(--muted); font-size: 12px; }
+    @media (max-width: 720px) {
+      .cover-dialog-body { grid-template-columns: 1fr; gap: 16px; }
+      .cover-prompt { min-height: 300px; }
+    }
+    @media (max-width: 450px) {
+      .cover-modal { width: calc(100% - 20px); }
+      .cover-dialog-header, .cover-dialog-body, .cover-dialog-footer { padding-right: 14px; padding-left: 14px; }
+      .cover-dialog-footer { align-items: stretch; flex-direction: column; }
+      .cover-dialog-footer .button { width: 100%; }
+    }
+    .shell {
+      width: min(1440px, calc(100% - 48px));
+      height: calc(100vh - 72px);
+      min-height: 620px;
+      margin: 0 auto;
+      padding: 24px 0;
+    }
+    .workspace {
+      height: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+    .editor-panel, .preview-panel {
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+    .editor-panel { display: flex; flex-direction: column; }
+    .editor-bar {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .editor-bar strong { font-size: 14px; }
+    .editor-bar span { color: var(--muted); font-size: 11px; }
+    #markdown-input {
+      width: 100%;
+      min-height: 0;
+      flex: 1;
+      resize: none;
+      padding: 20px;
+      border: 0;
+      outline: 0;
+      color: #202326;
+      background: #fff;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", "Microsoft YaHei", monospace;
+      font-size: 14px;
+      line-height: 1.85;
+    }
+    #markdown-input::placeholder { color: #a0a8ad; }
+    .preview-panel { padding: 18px; background: #eceeef; }
+    .preview-frame {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: 1px solid #dfe3e5;
+      background: #fff;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    [hidden] { display: none !important; }
+    @media (max-width: 980px) {
+      .topbar { gap: 14px; padding: 12px 18px; }
+      .style-switcher { margin-left: auto; }
+      .shell { width: min(100% - 24px, 1440px); }
+    }
+    @media (max-width: 760px) {
+      body { padding-top: 126px; }
+      .topbar { align-items: stretch; flex-wrap: wrap; min-height: 126px; padding: 12px; }
+      .brand { flex: 1 0 auto; }
+      .style-switcher { order: 3; width: 100%; margin-left: 0; }
+      .style-tab { flex: 1; padding: 0 8px; }
+      .top-actions { margin-left: auto; }
+      .shell { height: auto; min-height: 0; padding: 12px 0 24px; }
+      .workspace { height: auto; grid-template-columns: 1fr; gap: 12px; }
+      .editor-panel, .preview-panel { height: 70vh; min-height: 500px; }
+      .preview-panel { padding: 10px; }
+    }
+    @media (max-width: 450px) {
+      .brand h1 { font-size: 16px; }
+      .button { padding: 0 10px; font-size: 12px; }
+      .style-tab { font-size: 12px; }
+    }
+    @media (max-width: 620px) {
+      body { padding-top: 176px; }
+      .topbar { min-height: 176px; }
+      .brand { flex-basis: 100%; }
+      .top-actions { width: 100%; justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">排</div>
+      <div>
+        <h1>公众号排版工作台</h1>
+      </div>
+    </div>
+    <div class="style-switcher" id="style-switcher" aria-label="排版风格"></div>
+    <div class="top-actions">
+      <button class="button" id="cover-image" type="button">封面图</button>
+      <button class="button primary" id="copy-to-wechat" disabled>复制到公众号</button>
+      <button class="button" id="download-html" disabled>下载 HTML</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="workspace">
+      <section class="editor-panel">
+        <div class="editor-bar">
+          <strong>Markdown 输入</strong>
+          <span id="char-count">0 字</span>
+        </div>
+        <label class="sr-only" for="markdown-input">Markdown 文章内容</label>
+        <textarea id="markdown-input" spellcheck="false" placeholder="把 Markdown 文章内容粘贴到这里…"></textarea>
+      </section>
+      <section class="preview-panel">
+        <iframe class="preview-frame" id="preview-frame" title="公众号排版预览"></iframe>
+      </section>
+    </div>
+  </main>
+  <dialog class="cover-modal" id="cover-modal" aria-labelledby="cover-modal-title">
+    <div class="cover-dialog">
+      <header class="cover-dialog-header">
+        <div>
+          <p>提示词工作台</p>
+          <h2 id="cover-modal-title">封面图</h2>
+        </div>
+        <button class="icon-button" id="close-cover-modal" type="button" aria-label="关闭封面图弹窗" title="关闭">×</button>
+      </header>
+      <div class="cover-dialog-body">
+        <div class="cover-controls">
+          <label class="cover-field">
+            <span>模板选择</span>
+            <select class="cover-select" id="cover-template"></select>
+          </label>
+          <label class="cover-field">
+            <span>场景</span>
+            <select class="cover-select" id="cover-scene"></select>
+          </label>
+          <label class="cover-field">
+            <span>时间和光线</span>
+            <select class="cover-select" id="cover-lighting"></select>
+          </label>
+          <label class="cover-field">
+            <span>主体</span>
+            <select class="cover-select" id="cover-subject"></select>
+          </label>
+          <label class="cover-field">
+            <span>构图</span>
+            <select class="cover-select" id="cover-composition"></select>
+          </label>
+        </div>
+        <label class="cover-prompt-field">
+          <span>提示词编辑</span>
+          <textarea class="cover-prompt" id="cover-prompt" spellcheck="false"></textarea>
+        </label>
+      </div>
+      <footer class="cover-dialog-footer">
+        <span class="cover-status" id="cover-copy-status" aria-live="polite"></span>
+        <button class="button primary" id="copy-cover-prompt" type="button">复制提示词</button>
+      </footer>
+    </div>
+  </dialog>
+  <div class="sr-only" id="live-status" aria-live="polite"></div>
+  <script src="src/shared/constants.js"></script>
+  <script src="src/shared/html.js"></script>
+  <script src="src/markdown/inline.js"></script>
+  <script src="src/markdown/title.js"></script>
+  <script src="src/render/components.js"></script>
+  <script src="src/markdown/render.js"></script>
+  <script src="src/ui/clipboard.js"></script>
+  <script src="src/cover/content.js"></script>
+  <script src="src/cover/prompt.js"></script>
+  <script src="src/cover/ui.js"></script>
+  <script src="src/ui/app.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
