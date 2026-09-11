@@ -79,6 +79,8 @@
     let items = [];
     let bodyStarted = false;
     let leadingNotice = null;
+    let skippingLeadingMetadata = false;
+    let leadingMetadataHasContent = false;
 
     const flushParagraph = () => {
       if (!paragraph.length) return;
@@ -129,9 +131,29 @@
 
     for (const raw of lines) {
       const line = raw.trim();
+
+      // Cover copy, summaries, and other publishing notes may appear before
+      // the article body. They are input metadata, so skip their whole
+      // paragraph while continuing to parse the actual article below them.
+      if (skippingLeadingMetadata) {
+        if (isMetadataStart(line)) {
+          leadingMetadataHasContent = false;
+          continue;
+        }
+        if (!line) {
+          if (leadingMetadataHasContent) skippingLeadingMetadata = false;
+          continue;
+        }
+        leadingMetadataHasContent = true;
+        continue;
+      }
+
       if (isMetadataStart(line)) {
         flushParagraph(); flushQuote(); flushItems();
-        break;
+        if (bodyStarted) break;
+        skippingLeadingMetadata = true;
+        leadingMetadataHasContent = false;
+        continue;
       }
       if (!line) { flushParagraph(); flushQuote(); flushItems(); continue; }
       if (line === '---') { flushParagraph(); flushQuote(); flushItems(); continue; }
